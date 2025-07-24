@@ -1,0 +1,95 @@
+.section {
+  padding: 6rem 9rem 5rem;
+  color: #121212;
+  
+}
+
+.heading {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  font-family: 'Aeonik', sans-serif;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .cards {
+    flex-direction: row;
+  }
+}
+
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  flex: 1;
+}
+
+.quote {
+  font-size: 1rem;
+  color: #444;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  letter-spacing: -0.3px;
+}
+
+.author {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #111;
+  font-family: 'Inter', sans-serif;
+  text-align: left;
+  letter-spacing: -0.1px;
+}
+
+.ctaBox {
+  margin-top: 5rem;
+}
+
+.ctaHeading {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  font-family: 'Aeonik', sans-serif;
+  text-align: center;
+}
+
+.ctaSubheading {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 2rem;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+}
+
+.ctaButton {
+  background-color: #6E62E5;
+  color: white;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  
+}
+.ctaBox {
+  margin-top: 8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ctaButton:hover {
+  background-color: #584DC5;
+}
