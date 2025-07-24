@@ -56,8 +56,6 @@ export default function HeroSection() {
         </button>
 
         <div className={styles.bannerWrapper}>
-          import Image from 'next/image';
-
 <Image
   src="/banner.svg"
   alt="Banner Illustration"
