@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Image from 'next/image';
 import styles from './HeroSection.module.css';
 import EarlyAccessModal from '../components/EarlyAccessModal'; // if HeroSection is inside /components and EarlyAccessModal is a sibling file
 
@@ -55,11 +56,15 @@ export default function HeroSection() {
         </button>
 
         <div className={styles.bannerWrapper}>
-          <img
-            src="/banner.svg"
-            alt="Banner Illustration"
-            className={styles.banner}
-          />
+          import Image from 'next/image';
+
+<Image
+  src="/banner.svg"
+  alt="Banner Illustration"
+  width={600} // Set appropriate width
+  height={300} // Set appropriate height
+  className={styles.banner}
+/>
         </div>
       </div>
 
