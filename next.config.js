@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  images: {
-    domains: ['captionspark.in'], // or add your domain like 'captionspark.in'
-  },
+  output: 'standalone',
+  experimental: {
+    instrumentationHook: true
+  }
 };
 
 module.exports = nextConfig;
