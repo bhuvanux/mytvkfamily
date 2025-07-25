@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   images: {
-    domains: ['img.clerk.com'],
+    domains: ['captionspark.in'], // or add your domain like 'captionspark.in'
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
