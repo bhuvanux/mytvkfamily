@@ -1,7 +1,6 @@
 // app/layout.js
 
 import './globals.css';
-import { Analytics } from '@vercel/analytics/next';
 import { Inter } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import Providers from './provider';
@@ -17,16 +16,28 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
-      <html lang="en" className={inter.variable}>
+      <html lang="en" suppressHydrationWarning>
         <head>
           <title>CaptionSpark</title>
+
+          {/* ✅ GA4 Tracking Script */}
+          <script async src="https://www.googletagmanager.com/gtag/js?id=G-1C3QJGTH02XX"></script>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){ dataLayer.push(arguments); }
+                gtag('js', new Date());
+                gtag('config', 'G-1C3QJGTH02XX', { debug_mode: true });
+              `,
+            }}
+          />
         </head>
         <body className={inter.className}>
           <Providers>
             <Header />
             {children}
           </Providers>
-          <Analytics />
         </body>
       </html>
     </ClerkProvider>
