@@ -1,10 +1,6 @@
-/* app/globals.css */
+/* Global Fix (Optional but safe) */
+html,
 body {
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, sans-serif;
-  background-color: #fff;
-  color: #000;
+  max-width: 100%;
+  overflow-x: hidden;
 }
-
-/* Add your global styles here */

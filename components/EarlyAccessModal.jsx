@@ -11,78 +11,116 @@ export default function EarlyAccessModal({ show, onClose }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [emailError, setEmailError] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [inputStarted, setInputStarted] = useState(false);
+
+  useEffect(() => {
+    if (show) {
+      gtag('event', 'modal_open_waitlist', {
+        event_category: 'Waitlist Modal',
+        event_label: 'Modal Opened',
+        value: 1,
+      });
+    }
+  }, [show]);
 
   useEffect(() => {
     if (isSubmitted) {
+      gtag('event', 'success_waitlist_shown', {
+        event_category: 'Waitlist Modal',
+        event_label: 'Success Message Shown',
+        value: 1,
+      });
+
       const timeout = setTimeout(() => {
         onClose();
         setIsSubmitted(false);
         setName('');
         setEmail('');
       }, 4000);
+
       return () => clearTimeout(timeout);
     }
   }, [isSubmitted, onClose]);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setErrorMessage('');
+    e.preventDefault();
+    setErrorMessage('');
 
-  try {
-    // 👇 Check if email already exists (skip name check)
-    const { data: existingUser, error: fetchError } = await supabase
-      .from('waitlist')
-      .select('*')
-      .eq('email', email.toLowerCase());
+    try {
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('waitlist')
+        .select('*')
+        .eq('email', email.toLowerCase());
 
-    if (fetchError) {
-      throw fetchError;
+      if (fetchError) throw fetchError;
+
+      if (existingUser.length > 0) {
+        setErrorMessage('This email is already on the waitlist.');
+        setEmailError(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('waitlist')
+        .insert([{ name, email: email.toLowerCase() }]);
+
+      if (error) throw error;
+
+      setEmailError(false);
+      setIsSubmitted(true);
+
+      gtag('event', 'submit_waitlist', {
+        event_category: 'Waitlist Modal',
+        event_label: 'Form Submitted',
+        value: 1,
+      });
+
+      await fetch('/api/notify-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email }),
+      });
+    } catch (err) {
+      console.error('Supabase error:', err.message);
+      setErrorMessage('Server error. Try again later.');
     }
+  };
 
-    if (existingUser.length > 0) {
-      setErrorMessage('This email is already on the waitlist.');
-      setEmailError(true);
-      return;
-    }
-
-    // 👇 Insert user
-    const { data, error } = await supabase
-      .from('waitlist')
-      .insert([{ name, email: email.toLowerCase() }]);
-
-    if (error) {
-      throw error;
-    }
-
-    setEmailError(false);
-    setIsSubmitted(true);
-    console.log('User added to waitlist:', data);
-
-    await fetch('/api/notify-admin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, email }),
+  const handleClose = () => {
+    gtag('event', 'close_waitlist_modal', {
+      event_category: 'Waitlist Modal',
+      event_label: 'Closed Without Submit',
+      value: 1,
     });
-  } catch (err) {
-    console.error('Supabase error:', err.message);
-    setErrorMessage('Server error. Try again later.');
-  }
-};
+    onClose();
+  };
+
+  const handleInput = () => {
+    if (!inputStarted) {
+      setInputStarted(true);
+      gtag('event', 'form_input_started', {
+        event_category: 'Waitlist Modal',
+        event_label: 'Started Typing',
+        value: 1,
+      });
+    }
+  };
+
   if (!show) return null;
 
   return (
     <div className={styles.overlay}>
       {isSubmitted ? (
-       <div className={styles.successContainer}>
-    <div className={styles.lottieAnimation}>
-      <Lottie animationData={successAnimation} loop={false} />
-    </div>
-    <p className={styles.successMessage}>Thank you!</p>
-  <p className={styles.successMessage}>You're on the waitlist! 🎉</p>
-  </div>
-) : (
+        <div className={styles.successContainer}>
+          <div className={styles.lottieAnimation}>
+            <Lottie animationData={successAnimation} loop={false} />
+          </div>
+          <p className={styles.successMessage}>Thank you!</p>
+          <p className={styles.successMessage}>You're on the waitlist! 🎉</p>
+        </div>
+      ) : (
         <form className={styles.form} onSubmit={handleSubmit}>
           <p className={styles.p1}>Claim Your Spot Before We Launch 🚀</p>
 
@@ -93,7 +131,10 @@ export default function EarlyAccessModal({ show, onClose }) {
               className={styles.input}
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                handleInput();
+              }}
               required
             />
           </div>
@@ -105,7 +146,10 @@ export default function EarlyAccessModal({ show, onClose }) {
               className={styles.input}
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                handleInput();
+              }}
               required
             />
           </div>
@@ -118,7 +162,7 @@ export default function EarlyAccessModal({ show, onClose }) {
 
           {errorMessage && <p className={styles.error}>{errorMessage}</p>}
           <p className={styles.p}>You’ll be first to know when we launch!</p>
-          <button className={styles.closeBtn} onClick={onClose}>×</button>
+          <button className={styles.closeBtn} onClick={handleClose}>×</button>
         </form>
       )}
     </div>

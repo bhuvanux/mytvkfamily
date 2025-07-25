@@ -1,19 +1,33 @@
 .section {
-  padding: 0rem 0rem;
+  padding: 2rem 0; /* default vertical padding */
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* default for desktop */
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem; /* add horizontal padding for desktop too */
 }
 
-@media (min-width: 1024px) {
+/* 👇 Mobile + tablet layout fix */
+@media (max-width: 1024px) {
   .container {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    padding: 0 1.5rem;
+    gap: 2rem;
+  }
+
+  .textContent, .imageWrapper {
+    width: 100%;
+    text-align: center;
+  }
+
+  .heading {
+    text-align: center;
+    font-size: 1.8rem;
   }
 }
 
@@ -59,9 +73,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-top: 2rem;
 }
 
 .image {
+  width: 100%;
   max-width: 100%;
   height: auto;
+  display: block;
 }

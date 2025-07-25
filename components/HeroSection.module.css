@@ -1,10 +1,18 @@
+/* Base Wrapper */
+.heroSectionWrapper {
+  overflow-x: hidden;
+  padding: 0 1rem;
+}
+
+/* Hero Block */
 .hero {
   max-width: 80rem;
   margin: 0 auto;
-  padding-top: 6rem;
+  padding-top: 4rem;
   text-align: center;
 }
 
+/* Heading */
 .heading {
   font-family: 'Aeonik', sans-serif;
   font-size: 3rem;
@@ -20,16 +28,27 @@
   }
 }
 
+/* Subheading */
 .subheading {
   font-family: 'Inter', sans-serif;
   font-size: 1.3rem;
   color: #4b5563;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   font-weight: 500;
   letter-spacing: -0.4px;
 }
 
-/* Button Styles */
+/* CTA Row */
+.ctaRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 1.5rem;
+}
+
+/* Pushable Button */
 .pushable {
   position: relative;
   background: transparent;
@@ -39,7 +58,6 @@
   outline-offset: 4px;
   transition: filter 250ms;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-  margin: 0 auto;
 }
 
 .shadow {
@@ -111,7 +129,7 @@
   outline: none;
 }
 
-/* Shiny Text */
+/* Shine Text */
 .btnShine {
   display: inline-block;
   background: linear-gradient(
@@ -145,6 +163,125 @@
   }
 }
 
+.ctaRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+
+.likeButton {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  height: 62px;
+  width: auto;
+  gap: 12px;
+  border-radius: 12px;
+  border: none;
+  background-color: #1d1d1d;
+  
+  overflow: hidden;
+  box-shadow:
+    inset -2px -2px 5px rgba(255, 255, 255, 0.2),
+    inset 2px 2px 5px rgba(0, 0, 0, 0.1),
+    4px 4px 10px rgba(0, 0, 0, 0.4),
+    -2px -2px 8px rgba(255, 255, 255, 0.1);
+}
+
+.like {
+  width: 70%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px; /* adds spacing between icon and text */
+  padding-left: 10px; /* optional: add left padding */
+}
+
+.likeIcon {
+  fill: #505050;
+  height: 28px;
+  width: 28px;
+  padding-left:3px;
+  transition: fill 0.2s ease-out;
+}
+
+.likeCountWrapper {
+  
+  display: flex;
+  align-items: center;
+}
+.likeText {
+  color: #fcfcfc;
+  font-size: 18px;
+font-family: aeonik, sans-serif;
+letter-spacing: 0.5px;
+  font-weight: 500;
+  transition: color 0.2s ease-out;
+      padding-right: 10px;
+}
+
+.likeCount {
+  position: relative;
+  height: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 32px; /* good for 2-3 digits */
+  padding-right: 6px;
+  font-size: 16px;
+  font-family: aeonik, sans-serif;
+  transition: all 0.5s ease-out;
+  color: #717070;
+  white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.one {
+  transform: translateY(0px);
+  justify-content: space-evenly;
+  opacity: 1;
+}
+
+.two {
+  transform: translateY(40px);
+  opacity: 0;
+  padding-right: 10px;
+  position: absolute;
+  justify-content: space-evenly;
+  top: 0;
+  right: 0;
+}
+
+.show {
+  transform: translateY(0px);
+  opacity: 1;
+  color: #fcfcfc;
+}
+
+.hide {
+  transform: translateY(-40px);
+  opacity: 0;
+}
+
+.liked .likeIcon {
+  fill: #fc4e4e;
+  animation: enlarge 0.2s ease-out 1;
+}
+
+@keyframes enlarge {
+  0% {
+    transform: scale(0.5);
+  }
+  100% {
+    transform: scale(1.2);
+  }
+}
+/* Banner */
 .bannerWrapper {
   margin-top: 3rem;
 }
@@ -154,15 +291,12 @@
   height: auto;
   margin-top: 45px;
 }
-/* Hero Section Container */
-.heroWrapper {
-  position: relative;
-}
 
+/* Circular Button Top Right */
 .circularWrapper {
   position: absolute;
   top: 2rem;
-  right: 10rem;
+  right: 14rem;
   z-index: 10;
 }
 
@@ -178,9 +312,7 @@
   position: relative;
   display: grid;
   place-content: center;
-  transition:
-    background 300ms,
-    transform 200ms;
+  transition: background 300ms, transform 200ms;
   font-weight: 600;
 }
 
@@ -196,50 +328,69 @@
   inset: 7px;
 }
 
-.button__circle {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  overflow: hidden;
-  background: #fff;
-  color: #121212;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.button__icon {
-  width: 14px;
-  height: 14px;
-}
-
-.button__iconCopy {
-  position: absolute;
-  transform: translate(-150%, 150%);
-}
-
-.button:hover {
-  background: #000;
-  transform: scale(1.05);
-}
-
-.button:hover .button__icon {
-  color: #000;
-}
-
-.button:hover .button__icon:first-child {
-  transition: transform 0.3s ease-in-out;
-  transform: translate(150%, -150%);
-}
-
-.button:hover .button__iconCopy {
-  transition: transform 0.3s ease-in-out 0.1s;
-  transform: translate(0);
-}
-
 @keyframes text-rotation {
   to {
     rotate: 360deg;
   }
+}
+
+/* Responsive Tweaks */
+@media (max-width: 768px) {
+  .hero {
+    padding-top: 4rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .heading {
+    font-size: 2rem;
+    line-height: 2.6rem;
+  }
+
+  .subheading {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .circularWrapper {
+    top: 1rem;
+    right: 1rem;
+    transform: scale(0.75);
+  }
+
+  .pushable .front {
+    padding: 14px 30px;
+  }
+
+  .btnShine {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .bannerWrapper {
+    margin-top: 2rem;
+  }
+
+  .banner {
+    width: 100%;
+    height: auto;
+  }
+
+  .ctaRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.arrowIcon {
+  width: 24px;
+  height: 24px;
+  z-index: 2;
+  position: relative;
+  pointer-events: none;
+  transition: transform 0.3s ease;
+}
+
+.button:hover .arrowIcon {
+  transform: scale(1.15);
 }
