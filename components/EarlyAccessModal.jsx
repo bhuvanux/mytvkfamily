@@ -84,7 +84,7 @@ export default function EarlyAccessModal({ show, onClose }) {
       });
     } catch (err) {
       console.error('Supabase error:', err.message);
-      setErrorMessage('Server error. Try again later.');
+      setErrorMessage('Email ID already exist.');
     }
   };
 
