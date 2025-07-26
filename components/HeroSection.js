@@ -1,106 +1,77 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import ExcitedButton from './ExcitedButton';
 import styles from './HeroSection.module.css';
+import { handleExcitedClick, fetchExcitedCount } from '../lib/excited';
+import { supabase } from '../lib/supabaseClient'; // ✅ ADD THIS LINE
 import EarlyAccessModal from '../components/EarlyAccessModal';
-import { supabase } from '../lib/supabaseClient';
 import usePageView from '../lib/usePageView';
-import * as gtag from '../lib/gtag'; // 👈 GA import
+import * as gtag from '../lib/gtag';
 
 export default function HeroSection() {
   usePageView();
   const [showModal, setShowModal] = useState(false);
-  const [excitedCount, setExcitedCount] = useState(0);
+  const [todayCount, setTodayCount] = useState(0);
+  const [lifetimeLikes, setLifetimeLikes] = useState(0);
   const [liked, setLiked] = useState(false);
-  const [userIP, setUserIP] = useState('');
 
+  
   const formatCount = (count) => {
-    if (count >= 1000000) return (count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-    if (count >= 1000) return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    if (count >= 1_000_000) return (count / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (count >= 1_000) return (count / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
     return count.toString();
   };
 
   useEffect(() => {
-    const initialize = async () => {
-      const localLiked = localStorage.getItem('excited-liked');
-      if (localLiked === 'true') setLiked(true);
-
-      const ip = await getUserIP();
-      setUserIP(ip);
-      await fetchExcitedCount();
-
-      if (localLiked !== 'true') {
-        await checkIfLiked(ip);
-      }
-    };
-    initialize();
+    const localLiked = localStorage.getItem('excited-liked');
+    if (localLiked === 'true') setLiked(true);
+    loadCounts();
   }, []);
 
-  const getUserIP = async () => {
-    try {
-      const res = await fetch('https://api.ipify.org?format=json');
-      const data = await res.json();
-      return data.ip;
-    } catch {
-      return 'anonymous';
-    }
-  };
+  useEffect(() => {
+    const sync = (e) => {
+      if (e.key === 'excited-liked' && e.newValue === 'true') setLiked(true);
+    };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
 
-  const fetchExcitedCount = async () => {
-    const { data, error } = await supabase
-      .from('engagements')
-      .select('count')
-      .eq('type', 'excited')
-      .single();
+  const loadCounts = async () => {
+  const countData = await fetchExcitedCount();
+  setTodayCount(countData.today);
+  setLifetimeLikes(countData.total);
 
-    if (!error && data) {
-      setExcitedCount(data.count || 0);
-    }
-  };
+  // 👇 TEMPORARY DEBUG: Country-wise filtering
+  const { data, error } = await supabase
+    .from('excitement_clicks')
+    .select('*')
+    .eq('country', 'India');
 
-  const checkIfLiked = async (ip) => {
-    const { data } = await supabase
-      .from('excitement_clicks')
-      .select('ip_address')
-      .eq('ip_address', ip);
+  if (error) {
+    console.error('Country fetch error:', error.message);
+  } else {
+    console.log('India clicks:', data);
+  }
+};
 
-    if (data?.length) {
-      setLiked(true);
-      localStorage.setItem('excited-liked', 'true');
-    }
-  };
-
-  const handleExcitedClick = async () => {
-    if (!userIP || liked) return;
-
-    await supabase.from('excitement_clicks').insert([{ ip_address: userIP }]);
-
-    const { error } = await supabase
-      .from('engagements')
-      .upsert(
-        { type: 'excited', count: excitedCount + 1, updated_at: new Date().toISOString() },
-        { onConflict: 'type' }
-      );
-
-    if (!error) {
-      setLiked(true);
-      setExcitedCount((prev) => prev + 1);
-      localStorage.setItem('excited-liked', 'true');
-
-      // 🔥 GA Event
-      gtag.event({
-        action: 'click_excited',
-        category: 'Engagement',
-        label: 'Excited Button',
-        value: 1,
-      });
-    }
+  const handleClick = async () => {
+    if (liked) return;
+    await handleExcitedClick();
+    await loadCounts();
+    setLiked(true);
+    localStorage.setItem('excited-liked', 'true');
+    gtag.event({
+      action: 'click_excited',
+      category: 'Engagement',
+      label: 'Excited Button',
+      value: 1,
+    });
   };
 
   const handleAccessClick = () => {
     setShowModal(true);
-
-    // 🔥 GA Event
     gtag.event({
       action: 'click_waitlist',
       category: 'CTA',
@@ -111,8 +82,6 @@ export default function HeroSection() {
 
   const handleTopButtonClick = () => {
     setShowModal(true);
-
-    // 🔥 GA Event
     gtag.event({
       action: 'click_top_circle',
       category: 'CTA',
@@ -123,7 +92,6 @@ export default function HeroSection() {
 
   return (
     <section className={styles.heroSectionWrapper}>
-      {/* 🔵 Rotating Circular Button */}
       <div className={styles.circularWrapper}>
         <button className={styles.button} onClick={handleTopButtonClick}>
           <div className={styles.button__text}>
@@ -137,14 +105,12 @@ export default function HeroSection() {
         </button>
       </div>
 
-      {/* 🔤 Hero Text */}
       <div className={styles.hero}>
         <h1 className={styles.heading}>Generate Viral Captions in Seconds</h1>
         <p className={styles.subheading}>
           Captions & posts that grab attention — no effort, no writer’s block.
         </p>
 
-        {/* 🚀 CTA Row */}
         <div className={styles.ctaRow}>
           <button onClick={handleAccessClick} className={styles.pushable}>
             <span className={styles.shadow}></span>
@@ -154,10 +120,9 @@ export default function HeroSection() {
             </span>
           </button>
 
-          {/* ❤️ Excited Button */}
           <div
             className={`${styles.likeButton} ${liked ? styles.liked : ''}`}
-            onClick={handleExcitedClick}
+            onClick={handleClick}
           >
             <div className={styles.like}>
               <svg className={styles.likeIcon} viewBox="0 0 24 24">
@@ -171,19 +136,17 @@ export default function HeroSection() {
               <span className={styles.likeText}>Excited</span>
             </div>
 
-            {/* 🔢 Like Count Animation */}
             <div className={styles.likeCountWrapper}>
               <span className={`${styles.likeCount} ${styles.one} ${liked ? styles.hide : ''}`}>
-                {formatCount(excitedCount)}
+                {formatCount(todayCount)}
               </span>
               <span className={`${styles.likeCount} ${styles.two} ${liked ? styles.show : ''}`}>
-                {formatCount(excitedCount)}
+                {formatCount(todayCount)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* 🖼 Banner */}
         <div className={styles.bannerWrapper}>
           <Image
             src="/banner.svg"
@@ -193,9 +156,13 @@ export default function HeroSection() {
             className={styles.banner}
           />
         </div>
+        <div className={styles.ctaRow}>
+  <button onClick={handleAccessClick} className={styles.pushable}>...</button>
+
+  <ExcitedButton />
+</div>
       </div>
 
-      {/* 📩 Modal */}
       <EarlyAccessModal show={showModal} onClose={() => setShowModal(false)} />
     </section>
   );

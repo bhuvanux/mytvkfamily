@@ -9,7 +9,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata = {
   title: 'CaptionSpark',
-  description: 'Generate viral captions in seconds',
+  description: 'Generate Viral Captions in Seconds',
+  icons: {
+    icon: '/favicon.ico', // or '/favicon.png'
+  },
 };
 
 export default function RootLayout({ children }) {
