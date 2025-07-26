@@ -4,6 +4,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import Providers from './provider';
 import Header from '../components/Header';
+import PostHogProvider from './posthog-provider'; // ✅
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -11,31 +12,16 @@ export const metadata = {
   title: 'CaptionSpark',
   description: 'Generate Viral Captions in Seconds',
   icons: {
-    icon: '/favicon.ico', // or '/favicon.png'
+    icon: '/favicon.ico',
   },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>CaptionSpark</title>
-
-        {/* ✅ GA4 Tracking Script */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-1C3QJGTH02XX"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){ dataLayer.push(arguments); }
-              gtag('js', new Date());
-              gtag('config', 'G-1C3QJGTH02XX', { debug_mode: true });
-            `,
-          }}
-        />
-      </head>
       <body className={inter.className}>
         <Providers>
+          <PostHogProvider /> {/* ✅ Safe Client-only tracking */}
           <Header />
           {children}
         </Providers>

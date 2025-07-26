@@ -11,7 +11,7 @@ export default function Header() {
   return (
     <header className={styles.header}>
       <Link href="/" className={styles.logo}>
-        <img src="/Logo.svg" alt="CaptionSpark logo" width={32} height={32} />
+        <img src="/Logo.svg" alt="CaptionSpark logo" width={48} height={48} />
       </Link>
     </header>
   );

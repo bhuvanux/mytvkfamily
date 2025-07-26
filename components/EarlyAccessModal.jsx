@@ -4,6 +4,7 @@ import styles from './EarlyAccessModal.module.css';
 import { supabase } from '../lib/supabaseClient';
 import Lottie from 'lottie-react';
 import successAnimation from './lottie/success.json';
+import posthog from 'posthog-js';
 
 export default function EarlyAccessModal({ show, onClose }) {
   const [name, setName] = useState('');
@@ -12,23 +13,56 @@ export default function EarlyAccessModal({ show, onClose }) {
   const [emailError, setEmailError] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [inputStarted, setInputStarted] = useState(false);
+  const [metadata, setMetadata] = useState({});
 
+  // Step 1: Capture browser, platform, country
+  useEffect(() => {
+    const fetchDetails = async () => {
+      const device = navigator.userAgent;
+      const platform = navigator.platform;
+      const browser = (() => {
+        const ua = navigator.userAgent;
+        if (ua.includes("Chrome")) return "Chrome";
+        if (ua.includes("Safari")) return "Safari";
+        if (ua.includes("Firefox")) return "Firefox";
+        if (ua.includes("Edge")) return "Edge";
+        return "Other";
+      })();
+      let country = 'Unknown';
+      try {
+        const res = await fetch('https://ipapi.co/json');
+        const data = await res.json();
+        country = data.country_name || 'Unknown';
+      } catch (err) {
+        console.warn("Failed to fetch country:", err);
+      }
+
+      setMetadata({
+        device,
+        platform,
+        browser,
+        country,
+        timestamp: new Date().toISOString(),
+      });
+    };
+
+    fetchDetails();
+  }, []);
+
+  // Step 2: Fire modal open
   useEffect(() => {
     if (show) {
-      gtag('event', 'modal_open_waitlist', {
-        event_category: 'Waitlist Modal',
-        event_label: 'Modal Opened',
-        value: 1,
+      posthog.capture('modal_open_waitlist', {
+        ...metadata,
       });
     }
-  }, [show]);
+  }, [show, metadata]);
 
+  // Step 3: Fire on success shown
   useEffect(() => {
     if (isSubmitted) {
-      gtag('event', 'success_waitlist_shown', {
-        event_category: 'Waitlist Modal',
-        event_label: 'Success Message Shown',
-        value: 1,
+      posthog.capture('success_waitlist_shown', {
+        ...metadata,
       });
 
       const timeout = setTimeout(() => {
@@ -40,7 +74,7 @@ export default function EarlyAccessModal({ show, onClose }) {
 
       return () => clearTimeout(timeout);
     }
-  }, [isSubmitted, onClose]);
+  }, [isSubmitted, metadata, onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,7 +94,7 @@ export default function EarlyAccessModal({ show, onClose }) {
         return;
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('waitlist')
         .insert([{ name, email: email.toLowerCase() }]);
 
@@ -69,10 +103,10 @@ export default function EarlyAccessModal({ show, onClose }) {
       setEmailError(false);
       setIsSubmitted(true);
 
-      gtag('event', 'submit_waitlist', {
-        event_category: 'Waitlist Modal',
-        event_label: 'Form Submitted',
-        value: 1,
+      posthog.capture('submit_waitlist', {
+        name,
+        email,
+        ...metadata,
       });
 
       await fetch('/api/notify-admin', {
@@ -84,15 +118,13 @@ export default function EarlyAccessModal({ show, onClose }) {
       });
     } catch (err) {
       console.error('Supabase error:', err.message);
-      setErrorMessage('Email ID already exist.');
+      setErrorMessage('Email ID already exists or there was an error.');
     }
   };
 
   const handleClose = () => {
-    gtag('event', 'close_waitlist_modal', {
-      event_category: 'Waitlist Modal',
-      event_label: 'Closed Without Submit',
-      value: 1,
+    posthog.capture('close_waitlist_modal', {
+      ...metadata,
     });
     onClose();
   };
@@ -100,10 +132,8 @@ export default function EarlyAccessModal({ show, onClose }) {
   const handleInput = () => {
     if (!inputStarted) {
       setInputStarted(true);
-      gtag('event', 'form_input_started', {
-        event_category: 'Waitlist Modal',
-        event_label: 'Started Typing',
-        value: 1,
+      posthog.capture('form_input_started', {
+        ...metadata,
       });
     }
   };

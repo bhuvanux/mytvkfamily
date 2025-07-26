@@ -376,6 +376,7 @@
     padding-top: 4rem;
     padding-left: 1rem;
     padding-right: 1rem;
+    padding-top: 0%;
   }
 
   .heading {
@@ -395,11 +396,12 @@
   }
 
   .pushable .front {
-    padding: 14px 30px;
+    padding: 21px 30px;
   }
 
   .btnShine {
-    font-size: 14px;
+    font-size: 18px;
+    font-weight: 600;
     letter-spacing: 1px;
   }
 

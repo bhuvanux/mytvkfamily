@@ -2,28 +2,26 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import ExcitedButton from './ExcitedButton';
 import styles from './HeroSection.module.css';
 import { handleExcitedClick, fetchExcitedCount } from '../lib/excited';
-import { supabase } from '../lib/supabaseClient'; // ✅ ADD THIS LINE
-import EarlyAccessModal from '../components/EarlyAccessModal';
-import usePageView from '../lib/usePageView';
-import * as gtag from '../lib/gtag';
+import { supabase } from '../lib/supabaseClient';
+import EarlyAccessModal from './EarlyAccessModal';
+import posthog from 'posthog-js';
 
 export default function HeroSection() {
-  usePageView();
   const [showModal, setShowModal] = useState(false);
   const [todayCount, setTodayCount] = useState(0);
   const [lifetimeLikes, setLifetimeLikes] = useState(0);
   const [liked, setLiked] = useState(false);
 
-  
+  // Format excited count (K/M)
   const formatCount = (count) => {
     if (count >= 1_000_000) return (count / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
     if (count >= 1_000) return (count / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
     return count.toString();
   };
 
+  // Fetch like counts & check local like
   useEffect(() => {
     const localLiked = localStorage.getItem('excited-liked');
     if (localLiked === 'true') setLiked(true);
@@ -39,59 +37,57 @@ export default function HeroSection() {
   }, []);
 
   const loadCounts = async () => {
-  const countData = await fetchExcitedCount();
-  setTodayCount(countData.today);
-  setLifetimeLikes(countData.total);
+    const countData = await fetchExcitedCount();
+    setTodayCount(countData.today);
+    setLifetimeLikes(countData.total);
 
-  // 👇 TEMPORARY DEBUG: Country-wise filtering
-  const { data, error } = await supabase
-    .from('excitement_clicks')
-    .select('*')
-    .eq('country', 'India');
+    // Optional: debug India clicks
+    const { data, error } = await supabase
+      .from('excitement_clicks')
+      .select('*')
+      .eq('country', 'India');
+    if (error) console.error('Country fetch error:', error.message);
+    else console.log('India clicks:', data);
+  };
 
-  if (error) {
-    console.error('Country fetch error:', error.message);
-  } else {
-    console.log('India clicks:', data);
-  }
-};
-
+  // ❤️ Excited button
   const handleClick = async () => {
     if (liked) return;
     await handleExcitedClick();
     await loadCounts();
     setLiked(true);
     localStorage.setItem('excited-liked', 'true');
-    gtag.event({
-      action: 'click_excited',
-      category: 'Engagement',
-      label: 'Excited Button',
-      value: 1,
+
+    posthog.capture('click_excited', {
+      location: 'hero_section',
+      page: 'home',
+      timestamp: new Date().toISOString(),
     });
   };
 
+  // CTA Button: GET EARLY ACCESS
   const handleAccessClick = () => {
     setShowModal(true);
-    gtag.event({
-      action: 'click_waitlist',
-      category: 'CTA',
-      label: 'Get Early Access',
-      value: 1,
+    posthog.capture('click_waitlist', {
+      source: 'hero_section',
+      location: 'main_cta',
+      timestamp: new Date().toISOString(),
     });
   };
 
+  // Top circular JOIN WAITLIST NOW button
   const handleTopButtonClick = () => {
     setShowModal(true);
-    gtag.event({
-      action: 'click_top_circle',
-      category: 'CTA',
-      label: 'Top Circular Button',
-      value: 1,
+    posthog.capture('click_top_circle', {
+      source: 'hero_section',
+      location: 'top_circular_cta',
+      timestamp: new Date().toISOString(),
     });
   };
 
   return (
     <section className={styles.heroSectionWrapper}>
+      {/* 🟣 Top Circular CTA */}
       <div className={styles.circularWrapper}>
         <button className={styles.button} onClick={handleTopButtonClick}>
           <div className={styles.button__text}>
@@ -105,12 +101,14 @@ export default function HeroSection() {
         </button>
       </div>
 
+      {/* 🌟 Hero Content */}
       <div className={styles.hero}>
         <h1 className={styles.heading}>Generate Viral Captions in Seconds</h1>
         <p className={styles.subheading}>
           Captions & posts that grab attention — no effort, no writer’s block.
         </p>
 
+        {/* 🚀 CTA and ❤️ Excited */}
         <div className={styles.ctaRow}>
           <button onClick={handleAccessClick} className={styles.pushable}>
             <span className={styles.shadow}></span>
@@ -147,6 +145,7 @@ export default function HeroSection() {
           </div>
         </div>
 
+        {/* 📸 Hero Image */}
         <div className={styles.bannerWrapper}>
           <Image
             src="/banner.svg"
@@ -156,13 +155,9 @@ export default function HeroSection() {
             className={styles.banner}
           />
         </div>
-        <div className={styles.ctaRow}>
-  <button onClick={handleAccessClick} className={styles.pushable}>...</button>
-
-  <ExcitedButton />
-</div>
       </div>
 
+      {/* 🔓 Waitlist Modal */}
       <EarlyAccessModal show={showModal} onClose={() => setShowModal(false)} />
     </section>
   );

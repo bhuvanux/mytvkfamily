@@ -2,24 +2,33 @@
   background-color: #0f0f0f;
   color: white;
   text-align: center;
-  padding: 1.5rem 1rem;
+  padding: 1.5rem 0rem;
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
-  line-height: 2.2; /* reduced for smaller devices */
+  line-height: 1.8;
   width: 100%;
   margin-top: 50px;
-  word-break: break-word; /* prevents overflow */
+
+  /* Ensure cleaner breaking & spacing */
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
-/* Responsive fine-tuning */
+/* Paragraph max width for better mobile wrapping */
+.footer p {
+  max-width: 80%;
+  margin: 0 auto;
+}
+
+/* Highlighted heart emoji color */
+.footer .heart {
+  color: #ff4d4d;
+}
+
+/* Mobile styles */
 @media (max-width: 768px) {
   .footer {
     font-size: 0.95rem;
-    line-height: 1.8;
-    padding: 1.2rem 1rem;
   }
-}
-
-.footer .heart {
-  color: #ff4d4d;
 }

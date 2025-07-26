@@ -6,7 +6,10 @@ export default function Footer() {
   return (
     <footer className={styles.footer}>
       <p>
-        © 2025 <strong>CaptionSpark</strong> ✦ Built for creators ✦ Made with <span className={styles.heart}>❤️</span> for creators everywhere.
+        © 2025&nbsp;<strong>CaptionSpark</strong>&nbsp;✦&nbsp;
+        Built for creators&nbsp;✦&nbsp;
+        Made with <span className={styles.heart}>❤️</span>&nbsp;
+        for creators everywhere.
       </p>
     </footer>
   );
