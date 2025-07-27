@@ -77,50 +77,54 @@ export default function EarlyAccessModal({ show, onClose }) {
   }, [isSubmitted, metadata, onClose]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
+  e.preventDefault();
+  setErrorMessage('');
 
-    try {
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('waitlist')
-        .select('*')
-        .eq('email', email.toLowerCase());
+  try {
+    const { data: existingUser, error: fetchError } = await supabase
+      .from('waitlist')
+      .select('*')
+      .eq('email', email.toLowerCase());
 
-      if (fetchError) throw fetchError;
+    if (fetchError) throw fetchError;
 
-      if (existingUser.length > 0) {
-        setErrorMessage('This email is already on the waitlist.');
-        setEmailError(true);
-        return;
-      }
-
-      const { error } = await supabase
-        .from('waitlist')
-        .insert([{ name, email: email.toLowerCase() }]);
-
-      if (error) throw error;
-
-      setEmailError(false);
-      setIsSubmitted(true);
-
-      posthog.capture('submit_waitlist', {
-        name,
-        email,
-        ...metadata,
-      });
-
-      await fetch('/api/notify-admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email }),
-      });
-    } catch (err) {
-      console.error('Supabase error:', err.message);
-      setErrorMessage('Email ID already exists or there was an error.');
+    if (existingUser.length > 0) {
+      setErrorMessage('This email is already on the waitlist.');
+      setEmailError(true);
+      return;
     }
-  };
+
+    const { error } = await supabase
+      .from('waitlist')
+      .insert([{
+        name,
+        email: email.toLowerCase(),
+        country: metadata.country || 'Unknown',  // ✅ ✅ storing country here
+      }]);
+
+    if (error) throw error;
+
+    setEmailError(false);
+    setIsSubmitted(true);
+
+    posthog.capture('submit_waitlist', {
+      name,
+      email,
+      ...metadata,
+    });
+
+    await fetch('/api/notify-admin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email }),
+    });
+  } catch (err) {
+    console.error('Supabase error:', err.message);
+    setErrorMessage('Email ID already exists or there was an error.');
+  }
+};
 
   const handleClose = () => {
     posthog.capture('close_waitlist_modal', {
@@ -152,7 +156,7 @@ export default function EarlyAccessModal({ show, onClose }) {
         </div>
       ) : (
         <form className={styles.form} onSubmit={handleSubmit}>
-          <p className={styles.p1}>Claim Your Spot Before We Launch 🚀</p>
+          <p className={styles.p1}>Get Ahead. Be First. Join the CaptionSpark Launch!</p>
 
           <div className={styles.flexColumn}><label>Name</label></div>
           <div className={styles.inputForm}>

@@ -24,6 +24,7 @@
 @media (min-width: 768px) {
   .heading {
     font-size: 4rem;
+    
     letter-spacing: -0.8px;
   }
 }

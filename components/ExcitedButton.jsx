@@ -15,7 +15,7 @@ export default function ExcitedButton() {
       setStatus('success');
     }
 
-    fetchExcitedCount().then((res) => setTodayCount(res.today));
+    fetchExcitedCount().then((res) => setTodayCount(res.today || 0));
   }, []);
 
   const handleClick = async () => {
@@ -25,16 +25,16 @@ export default function ExcitedButton() {
     try {
       await handleExcitedClick();
 
-      // Show "Sending..." for 1.2s, then "Thank you!" with count
+      // Wait for visual feedback, then update count
       setTimeout(async () => {
         const updated = await fetchExcitedCount();
-        setTodayCount(updated.today);
+        setTodayCount(updated.today || 0);
         setClicked(true);
         localStorage.setItem('excited-clicked', 'true');
         setStatus('success');
       }, 1200);
     } catch (e) {
-      console.error(e);
+      console.error('Excited button error:', e);
       setStatus('default');
     }
   };
@@ -66,7 +66,17 @@ export default function ExcitedButton() {
           minWidth: '180px',
         }}
       >
-
+        <span>{getButtonText()}</span>
+        <span style={{
+          backgroundColor: '#333',
+          borderRadius: '8px',
+          padding: '2px 8px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          color: '#fff',
+        }}>
+          {todayCount}
+        </span>
       </button>
     </div>
   );
