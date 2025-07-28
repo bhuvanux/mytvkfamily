@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import styles from './EarlyAccessModal.module.css';
 import { supabase } from '../lib/supabaseClient';
@@ -15,26 +16,28 @@ export default function EarlyAccessModal({ show, onClose }) {
   const [inputStarted, setInputStarted] = useState(false);
   const [metadata, setMetadata] = useState({});
 
-  // Step 1: Capture browser, platform, country
+  // Fetch user metadata (device, platform, browser, country)
   useEffect(() => {
-    const fetchDetails = async () => {
+    const fetchMetadata = async () => {
       const device = navigator.userAgent;
       const platform = navigator.platform;
+
       const browser = (() => {
         const ua = navigator.userAgent;
-        if (ua.includes("Chrome")) return "Chrome";
-        if (ua.includes("Safari")) return "Safari";
-        if (ua.includes("Firefox")) return "Firefox";
-        if (ua.includes("Edge")) return "Edge";
-        return "Other";
+        if (ua.includes('Chrome')) return 'Chrome';
+        if (ua.includes('Safari')) return 'Safari';
+        if (ua.includes('Firefox')) return 'Firefox';
+        if (ua.includes('Edge')) return 'Edge';
+        return 'Other';
       })();
+
       let country = 'Unknown';
       try {
-        const res = await fetch('https://ipapi.co/json');
+        const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
         country = data.country_name || 'Unknown';
       } catch (err) {
-        console.warn("Failed to fetch country:", err);
+        console.warn('Country fetch failed:', err);
       }
 
       setMetadata({
@@ -46,100 +49,96 @@ export default function EarlyAccessModal({ show, onClose }) {
       });
     };
 
-    fetchDetails();
+    fetchMetadata();
   }, []);
 
-  // Step 2: Fire modal open
+  // PostHog: Track modal open
   useEffect(() => {
     if (show) {
-      posthog.capture('modal_open_waitlist', {
-        ...metadata,
-      });
+      posthog.capture('modal_open_waitlist', metadata);
     }
   }, [show, metadata]);
 
-  // Step 3: Fire on success shown
+  // PostHog: Track success shown and auto-close
   useEffect(() => {
     if (isSubmitted) {
-      posthog.capture('success_waitlist_shown', {
-        ...metadata,
-      });
+      posthog.capture('success_waitlist_shown', metadata);
 
       const timeout = setTimeout(() => {
         onClose();
         setIsSubmitted(false);
         setName('');
         setEmail('');
+        setInputStarted(false);
+        setErrorMessage('');
+        setEmailError(false);
       }, 4000);
 
       return () => clearTimeout(timeout);
     }
   }, [isSubmitted, metadata, onClose]);
 
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  setErrorMessage('');
-
-  try {
-    const { data: existingUser, error: fetchError } = await supabase
-      .from('waitlist')
-      .select('*')
-      .eq('email', email.toLowerCase());
-
-    if (fetchError) throw fetchError;
-
-    if (existingUser.length > 0) {
-      setErrorMessage('This email is already on the waitlist.');
-      setEmailError(true);
-      return;
-    }
-
-    const { error } = await supabase
-      .from('waitlist')
-      .insert([{
-        name,
-        email: email.toLowerCase(),
-        country: metadata.country || 'Unknown',  // ✅ ✅ storing country here
-      }]);
-
-    if (error) throw error;
-
-    setEmailError(false);
-    setIsSubmitted(true);
-
-    posthog.capture('submit_waitlist', {
-      name,
-      email,
-      ...metadata,
-    });
-
-    await fetch('/api/notify-admin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, email }),
-    });
-  } catch (err) {
-    console.error('Supabase error:', err.message);
-    setErrorMessage('Email ID already exists or there was an error.');
-  }
-};
-
-  const handleClose = () => {
-    posthog.capture('close_waitlist_modal', {
-      ...metadata,
-    });
-    onClose();
-  };
-
+  // Input tracking
   const handleInput = () => {
     if (!inputStarted) {
       setInputStarted(true);
-      posthog.capture('form_input_started', {
+      posthog.capture('form_input_started', metadata);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setEmailError(false);
+
+    try {
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('waitlist')
+        .select('*')
+        .eq('email', email.toLowerCase());
+
+      if (fetchError) throw fetchError;
+
+      if (existingUser.length > 0) {
+        setErrorMessage('This email is already on the waitlist.');
+        setEmailError(true);
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('waitlist')
+        .insert([
+          {
+            name,
+            email: email.toLowerCase(),
+            country: metadata.country || 'Unknown',
+          },
+        ]);
+
+      if (insertError) throw insertError;
+
+      setIsSubmitted(true);
+
+      posthog.capture('submit_waitlist', {
+        name,
+        email,
         ...metadata,
       });
+
+      await fetch('/api/notify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email }),
+      });
+    } catch (err) {
+      console.error('Error:', err.message);
+      setErrorMessage('There was an error or the email already exists.');
     }
+  };
+
+  const handleClose = () => {
+    posthog.capture('close_waitlist_modal', metadata);
+    onClose();
   };
 
   if (!show) return null;
@@ -161,9 +160,9 @@ export default function EarlyAccessModal({ show, onClose }) {
           <div className={styles.flexColumn}><label>Name</label></div>
           <div className={styles.inputForm}>
             <input
-              placeholder="Enter your name"
-              className={styles.input}
               type="text"
+              className={styles.input}
+              placeholder="Enter your name"
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -176,9 +175,9 @@ export default function EarlyAccessModal({ show, onClose }) {
           <div className={styles.flexColumn}><label>Email</label></div>
           <div className={`${styles.inputForm} ${emailError ? styles.inputFormError : ''}`}>
             <input
-              placeholder="Enter your email"
-              className={styles.input}
               type="email"
+              className={styles.input}
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -196,6 +195,7 @@ export default function EarlyAccessModal({ show, onClose }) {
 
           {errorMessage && <p className={styles.error}>{errorMessage}</p>}
           <p className={styles.p}>You’ll be first to know when we launch!</p>
+
           <button className={styles.closeBtn} onClick={handleClose}>×</button>
         </form>
       )}
