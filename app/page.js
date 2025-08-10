@@ -6,7 +6,6 @@ import posthog from 'posthog-js';
 
 // Dynamically import components
 const HeroSection = dynamic(() => import('../components/HeroSection'), { ssr: false });
-const FeaturesSection = dynamic(() => import('../components/FeaturesSection'), { ssr: false });
 const Footer = dynamic(() => import('../components/Footer'), { ssr: false });
 
 export default function HomePage() {
@@ -17,8 +16,6 @@ export default function HomePage() {
   return (
     <main>
       <HeroSection />
-      <FeaturesSection />
-      <Footer />
     </main>
   );
 }

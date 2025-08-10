@@ -1,163 +1,186 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import styles from './HeroSection.module.css';
-import { handleExcitedClick, fetchExcitedCount } from '../lib/excited';
-import { supabase } from '../lib/supabaseClient';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  fetchUserDistrict,     // auto-detect (or swap for your own picker)
+  getExcitedCount,       // read lifetime count per district
+  incrementExcited,      // atomic RPC increment
+  subscribeExcited,      // realtime subscription (UPDATE/INSERT)
+} from '../lib/excited';
 import EarlyAccessModal from './EarlyAccessModal';
 import posthog from 'posthog-js';
+import styles from './HeroSection.module.css';
 
 export default function HeroSection() {
   const [showModal, setShowModal] = useState(false);
-  const [todayCount, setTodayCount] = useState(0);
-  const [lifetimeLikes, setLifetimeLikes] = useState(0);
+  const [count, setCount] = useState(0);         // ⬅️ lifetime, not “today”
   const [liked, setLiked] = useState(false);
+  const [district, setDistrict] = useState('Unknown');
 
-  // Format excited count (K/M)
-  const formatCount = (count) => {
-    if (count >= 1_000_000) return (count / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-    if (count >= 1_000) return (count / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
-    return count.toString();
+  const unsubRef = useRef(null);
+  const likeKey = (dist) => `excited-liked:lifetime:${dist || 'Unknown'}`;
+
+  const formatCount = (n) => {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return (n ?? 0).toString();
   };
 
-  // Fetch like counts & check local like
+  // Load district → initial count → subscribe realtime
   useEffect(() => {
-    const localLiked = localStorage.getItem('excited-liked');
-    if (localLiked === 'true') setLiked(true);
-    loadCounts();
-  }, []);
+    let mounted = true;
 
-  useEffect(() => {
-    const sync = (e) => {
-      if (e.key === 'excited-liked' && e.newValue === 'true') setLiked(true);
+    (async () => {
+      const dist = await fetchUserDistrict();
+      if (!mounted) return;
+      setDistrict(dist);
+
+      // restore one-click-per-browser (remove this to allow unlimited taps)
+      if (localStorage.getItem(likeKey(dist)) === 'true') setLiked(true);
+
+      // initial lifetime count
+      try {
+        const c = await getExcitedCount(dist);
+        if (mounted) setCount(c);
+      } catch (e) {
+        console.warn('getExcitedCount failed:', e?.message ?? e);
+      }
+
+      // realtime subscription
+      if (unsubRef.current) unsubRef.current();
+      unsubRef.current = subscribeExcited(dist, (next) => {
+        // guard against out-of-order events
+        setCount((prev) => Math.max(prev, Number(next) || 0));
+      });
+    })();
+
+    return () => {
+      mounted = false;
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
+      }
     };
-    window.addEventListener('storage', sync);
-    return () => window.removeEventListener('storage', sync);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadCounts = async () => {
-    const countData = await fetchExcitedCount();
-    setTodayCount(countData.today);
-    setLifetimeLikes(countData.total);
-
-    // Optional: debug India clicks
-    const { data, error } = await supabase
-      .from('excitement_clicks')
-      .select('*')
-      .eq('country', 'India');
-    if (error) console.error('Country fetch error:', error.message);
-    else console.log('India clicks:', data);
-  };
-
-  // ❤️ Excited button
-  const handleClick = async () => {
-    if (liked) return;
-    await handleExcitedClick();
-    await loadCounts();
+  const handleLike = async () => {
+    if (liked) return;            // one per browser/profile (remove to allow multiple)
     setLiked(true);
-    localStorage.setItem('excited-liked', 'true');
+    setCount((c) => c + 1);       // optimistic bump
+
+    try {
+      const serverCount = await incrementExcited(district);
+      setCount((c) => Math.max(c, Number(serverCount) || 0));
+      localStorage.setItem(likeKey(district), 'true');
+    } catch (e) {
+      // rollback if RPC failed
+      setLiked(false);
+      setCount((c) => Math.max(0, c - 1));
+      console.error('increment failed:', e?.message ?? e);
+    }
 
     posthog.capture('click_excited', {
       location: 'hero_section',
       page: 'home',
+      district,
       timestamp: new Date().toISOString(),
     });
   };
 
-  // CTA Button: GET EARLY ACCESS
   const handleAccessClick = () => {
     setShowModal(true);
     posthog.capture('click_waitlist', {
       source: 'hero_section',
       location: 'main_cta',
-      timestamp: new Date().toISOString(),
-    });
-  };
-
-  // Top circular JOIN WAITLIST NOW button
-  const handleTopButtonClick = () => {
-    setShowModal(true);
-    posthog.capture('click_top_circle', {
-      source: 'hero_section',
-      location: 'top_circular_cta',
+      district,
       timestamp: new Date().toISOString(),
     });
   };
 
   return (
     <section className={styles.heroSectionWrapper}>
-      {/* 🟣 Top Circular CTA */}
-      <div className={styles.circularWrapper}>
-        <button className={styles.button} onClick={handleTopButtonClick}>
-          <div className={styles.button__text}>
-            {'JOIN WAITLIST NOW'.split('').map((char, i) => (
-              <span key={i} style={{ '--index': i }}>{char}</span>
-            ))}
-          </div>
-          <svg className={styles.arrowIcon} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-
-      {/* 🌟 Hero Content */}
+      {/* Content + buttons */}
       <div className={styles.hero}>
-        <h1 className={styles.heading}>Generate Viral Captions in Seconds</h1>
-        <p className={styles.subheading}>
-          Captions & posts that grab attention — no effort, no writer’s block.
-        </p>
+        <div className={styles.contentBlock}>
+          <h1 className={styles.title}>இரண்டாவது மாநில மாநாடு</h1>
+          <p className={styles.subtitle}>மக்கள் விரும்பும் முதலமைச்சர் வேட்பாளர் விஜய் அழைக்கிறார்</p>
+        </div>
 
-        {/* 🚀 CTA and ❤️ Excited */}
+        {/* CTAs */}
         <div className={styles.ctaRow}>
-          <button onClick={handleAccessClick} className={styles.pushable}>
-            <span className={styles.shadow}></span>
-            <span className={styles.edge}></span>
+          <button
+            onClick={handleAccessClick}
+            className={styles.pushable}
+            aria-label="மாநாட்டிற்கு செல்கிறேன்"
+          >
+            <span className={styles.shadow} />
+            <span className={styles.edge} />
             <span className={styles.front}>
-              <span className={styles.btnShine}>GET EARLY ACCESS</span>
+              <span className={styles.btnShine}>மாநாட்டிற்கு செல்கிறேன்</span>
             </span>
           </button>
 
           <div
             className={`${styles.likeButton} ${liked ? styles.liked : ''}`}
-            onClick={handleClick}
+            onClick={handleLike}
+            role="button"
+            aria-pressed={liked}
+            aria-label="My TVK like"
           >
             <div className={styles.like}>
-              <svg className={styles.likeIcon} viewBox="0 0 24 24">
-                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218
-                         25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25
-                         2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052
-                         5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25
-                         0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17
-                         15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" />
+              <svg className={styles.likeIcon} viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0Z" />
               </svg>
-              <span className={styles.likeText}>Excited</span>
+              <span className={styles.likeText}>My TVK</span>
             </div>
 
+            {/* lifetime number */}
             <div className={styles.likeCountWrapper}>
               <span className={`${styles.likeCount} ${styles.one} ${liked ? styles.hide : ''}`}>
-                {formatCount(todayCount)}
+                {formatCount(count)}
               </span>
               <span className={`${styles.likeCount} ${styles.two} ${liked ? styles.show : ''}`}>
-                {formatCount(todayCount)}
+                {formatCount(count)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* 📸 Hero Image */}
-        <div className={styles.bannerWrapper}>
-          <Image
-            src="/banner.svg"
-            alt="Banner Illustration"
-            width={1157}
-            height={862}
-            className={styles.banner}
-          />
+        {/* Venue info */}
+        <div className={styles.venueInfo}>
+          <a
+            href="https://maps.app.goo.gl/DGeEEhEUHoTY8SB96"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.venueLink}
+          >
+            பாரப்பத்தி, மதுரை (மதுரை - தூத்துக்குடி தேசிய நெடுஞ்சாலையில்)
+          </a>
+          <span className={styles.separator} aria-hidden="true">•</span>
+          <span className={styles.date}>21.08.2025</span>
+          <span className={styles.separator} aria-hidden="true">•</span>
+          <span className={styles.time}>காலை 9:00 முதல்</span>
+        </div>
+
+        {/* X / Twitter Follow */}
+        <div className={styles.twitterFollow}>
+          <a
+            href="https://x.com/risingoftvk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.twitterBtn}
+            aria-label="Follow @risingoftvk on X"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                 viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M18.244 2H21l-6.56 7.49L22.5 22h-6.937l-4.53-5.39L5.79 22H3l7.016-8.002L1.5 2h7.062l4.08 4.89L18.244 2Zm-1.212 18.31h1.86L7.03 3.61H5.062l11.97 16.7Z"/>
+            </svg>
+            <span>Follow</span>
+          </a>
         </div>
       </div>
 
-      {/* 🔓 Waitlist Modal */}
       <EarlyAccessModal show={showModal} onClose={() => setShowModal(false)} />
     </section>
   );

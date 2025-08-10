@@ -150,12 +150,12 @@ export default function EarlyAccessModal({ show, onClose }) {
           <div className={styles.lottieAnimation}>
             <Lottie animationData={successAnimation} loop={false} />
           </div>
-          <p className={styles.successMessage}>Thank you!</p>
-          <p className={styles.successMessage}>You're on the waitlist! 🎉</p>
+          <p className={styles.successMessage}>மிக்க மகிழ்ச்சி!☺️🙏</p>
+          <p className={styles.successMessage}>மாநாட்டில் சந்திப்போம் ,வெற்றி வாகை சூடுவோம் ❤️</p>
         </div>
       ) : (
         <form className={styles.form} onSubmit={handleSubmit}>
-          <p className={styles.p1}>Get Ahead. Be First. Join the CaptionSpark Launch!</p>
+          <p className={styles.p1}>இரண்டாவது மாநில மாநாடு தளபதி அழைக்கிறார்!</p>
 
           <div className={styles.flexColumn}><label>Name</label></div>
           <div className={styles.inputForm}>
@@ -190,11 +190,11 @@ export default function EarlyAccessModal({ show, onClose }) {
           <button className={styles.button} type="submit">
             <span className={styles.shadow}></span>
             <span className={styles.edge}></span>
-            <div className={styles.front}><span>Get Early Access</span></div>
+            <div className={styles.front}><span>மாநாட்டில் சந்திப்போம்</span></div>
           </button>
 
           {errorMessage && <p className={styles.error}>{errorMessage}</p>}
-          <p className={styles.p}>You’ll be first to know when we launch!</p>
+          <p className={styles.p}>நாடே எதிர்பாக்கும் மக்கள் விரும்பும் முதலமைச்சர் வேட்பாளர் விஜய்</p>
 
           <button className={styles.closeBtn} onClick={handleClose}>×</button>
         </form>

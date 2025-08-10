@@ -6,7 +6,12 @@ module.exports = {
     './pages/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        tamil: ['"TAU-Mullai"', 'sans-serif'],
+        tamilBold: ['"TAU-Mullai Bold"', 'sans-serif'], // optional for bold style
+      },
+    },
   },
   plugins: [],
 };

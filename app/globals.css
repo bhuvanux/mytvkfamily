@@ -1,9 +1,29 @@
 /* Global Fix (Optional but safe) */
-html,
-body {
-  max-width: 100%;
-  overflow-x: hidden;
+html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+}
+
+body {
+  background: url('/tvk2.png') no-repeat center;
+  background-size: cover; /* Keeps proportions */
+  background-position: top center; /* Aligns image like the original */
+  background-repeat: no-repeat;
+  background-color: #6e0a0a;
+  padding-top: 4rem; /* Add extra top spacing */
+}
+
+@font-face {
+  font-family: 'TAU-Paalai Bold';
+  src: url('/fonts/TAU-Paalai Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'TAU-Paalai Bold';
+  src: url('/fonts/TAU-Paalai Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
 }
