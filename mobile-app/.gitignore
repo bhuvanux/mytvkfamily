@@ -1,0 +1,21 @@
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Firebase config (add your actual config)
+# firebase.config.js
+
+# macOS
+.DS_Store
+
+# Environment
+.env
+.env.local
